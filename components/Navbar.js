@@ -43,7 +43,7 @@ export default function Navbar({ employeeId, role, avatarSrc }) {
           <span className="text-white font-bold text-lg">S</span>
         </div> */}
         <Link href="/dashboard" className="text-xs md:text-sm flex items-center font-bold text-orange-600 hover:text-blue-200 transition-colors">
-          <span className="hidden sm:inline">SURYODAY BANK OF SMILES</span>
+          <span className="hidden md:inline">SURYODAY-BANK OF SMILES</span>
           <span className="sm:hidden">SDB</span>
         </Link>
       </div>

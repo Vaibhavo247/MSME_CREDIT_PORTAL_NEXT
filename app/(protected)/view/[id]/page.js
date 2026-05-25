@@ -1,14 +1,11 @@
-import BusinessDetails from "@/components/view/businessdetails";
+import ViewModalPerson from "@/components/view/viewmodalperson";
 
-export default function viewPage(){
+export default async function ViewPage({ params }) {
+  const { id } = await params;
 
-
-    return(
-        <div>
-            
-            <p>bsdk kaushal vaibhav</p>
-
-            <BusinessDetails></BusinessDetails>
-        </div>
-    )
+  return (
+    <div className="p-4">
+      <ViewModalPerson id={id} />
+    </div>
+  );
 }

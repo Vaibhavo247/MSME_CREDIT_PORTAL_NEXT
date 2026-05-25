@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Button, Table, Modal } from "antd";
+import { ViewPersonModal } from "@/components/view/viewmodalperson";
 // import SearchBar from "./searchBar"; // optional local SearchBar
 
 export default function PedingTableClient({ initialData }) {
@@ -99,17 +100,11 @@ export default function PedingTableClient({ initialData }) {
         scroll={{ x: "max-content" }}
       />
 
-      <Modal
-        title="Application Details"
+      <ViewPersonModal
+        id={selectedRecordId}
         open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        width="90%"
-        footer={null}
-        destroyOnHidden
-      >
-        {/* You can render a view modal component here using selectedRecordId */}
-        <div>Details for: {selectedRecordId}</div>
-      </Modal>
+        onClose={() => setIsModalVisible(false)}
+      />
     </div>
   );
 }

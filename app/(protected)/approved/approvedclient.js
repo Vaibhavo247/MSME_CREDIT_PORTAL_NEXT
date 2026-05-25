@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from "react";
-import { Button, Table, Modal } from "antd";
-import Link from "next/link";
+import { Button, Table } from "antd";
+import { ViewPersonModal } from "@/components/view/viewmodalperson";
 // import SearchBar from "./searchBar"; // Ensure path is correct
 // import ViewModalPerson from "../viewperson/indexmodal"; // Ensure path is correct
 
@@ -39,9 +39,9 @@ export default function ApprovedClientPage({ initialData }) {
       fixed: "right",
       width: 100,
       render: (_, record) => (
-        <Link href={`/view/${record.id}`}    className="bg-green-600 border-none" >
-          view
-        </Link>
+        <Button type="primary" onClick={() => showModal(record)}>
+          View
+        </Button>
       ),
     },
   ];
@@ -70,16 +70,11 @@ export default function ApprovedClientPage({ initialData }) {
         }}
       />
 
-      <Modal
-        title="Application Details"
-        open={isModalVisible} // AntD 5.x uses 'open' instead of 'visible'
-        onCancel={() => setIsModalVisible(false)}
-        width="90%"
-        footer={null}
-        destroyOnHidden
-      >
-        {/* {selectedRecordId && <ViewModalPerson id={selectedRecordId} />} */}
-      </Modal>
+      <ViewPersonModal
+        id={selectedRecordId}
+        open={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+      />
     </div>
   );
 }

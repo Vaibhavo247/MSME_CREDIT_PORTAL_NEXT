@@ -1,228 +1,137 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { Select, Button, Input, Modal, Image, Carousel } from "antd";
+import { Alert, Button, Image } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
-// import Cusdetail from "../component/headingPara"; // Adjusted path to align from /components
-// import CPVDetails from "./cpvDetails";
+import ViewField from "./viewField";
 
-// Import custom Next.js server network boundary endpoints using root app structure alias
-// import { updateBusinessDetails, fetchExcelBinary } from "@/app/actions/business";
-// import { fetchData, getApiHeaderKey } from "../services/request";
+function normalizeImage(image) {
+  if (!image) return null;
+  return image.startsWith("data:") ? image : `data:image/jpeg;base64,${image}`;
+}
 
-// const { Option } = Select;
+function downloadDataUrl(dataUrl, fileName) {
+  if (!dataUrl) return;
 
-export default function BusinessDetails({
-  person,
-  id,
-  isBusinessDetailsChecked,
-  setIsBusinessDetailsChecked,
-}) {
-  const router = useRouter();
-  
-  if (person?.case_type === "NTBVL") {
-    return null;
-  }
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = fileName.replace(/\s+/g, "_");
+  link.click();
+}
 
-  const [data, setData] = useState([]);
-  const [breData, setBreData] = useState([]);
-  const [dist, setDist] = useState([]);
-  const [dist1, setDist1] = useState([]);
-  const [sector, setSector] = useState(person?.sector);
-  const [subsector, setSubsector] = useState(person?.subsector);
-  const [udyamEntityType, setUdyamEntityType] = useState(person?.udyam_entity_type);
-  const [isBusinessModalVisible, setIsBusinessModalVisible] = useState(false);
-  const [businessName, setBusinessName] = useState(person?.business_name_byuser);
-  const [loading, setLoading] = useState(false);
-  const [customerPhoto, setCustomerPhoto] = useState(null);
-
-  const checkboxRef = useRef(null);
-
-//   useEffect(() => {
-//     if (checkboxRef.current) {
-//       checkboxRef.current.focus();
-//     }
-//   }, []);
-
-//   const formatDate = (dateString) => {
-//     if (!dateString) return "";
-//     const [dd, mm, yyyy] = dateString.split("-");
-//     return `${yyyy}-${mm}-${dd}`;
-//   };
-
-//   const [businessIncorp, setBusinessIncorp] = useState(formatDate(person?.business_incorp_date));
-//   const [udyamIncorp, setUdyamIncorp] = useState(formatDate(person?.udyam_incorp_date));
-
-//   const downloadImage = (imageData, index) => {
-//     if (!imageData) return;
-//     const link = document.createElement("a");
-//     link.href = `data:image/jpeg;base64,${imageData}`;
-//     link.download = `${person?.first_name || 'customer'}_business_${index}.jpg`;
-//     link.click();
-//   };
-
-//   const businessImages = [
-//     { src: customerPhoto, index: 1 },
-//     { src: person?.business_image_1, index: 2 },
-//     { src: person?.business_image_2, index: 3 },
-//     { src: person?.business_image_3, index: 4 },
-//     { src: person?.business_image_4, index: 5 },
-//   ].filter((img) => img.src);
-
-//  const breFetch = async () => {
-//     try {
-//       const resp2 = await fetchData(`get-msme-static-details/${person?.msmeIdentifier}`);
-//       if (resp2?.data?.[1]?.[0]) setBreData(resp2.data[1][0]);
-//       if (resp2?.data?.[2]?.[0]) setDist(resp2.data[2][0]);
-//       if (resp2?.data?.[3]?.[0]) setDist1(resp2.data[3][0]);
-//     } catch (error) {
-//       console.error("Failed to fetch BRE data:", error);
-//     }
-//   };
-
-//   const fetchMetaData = async () => {
-//     try {
-//       const resp = await fetchData("get-sector-subsector");
-//       if (Array.isArray(resp?.data)) setData(resp.data);
-//     } catch (error) {
-//       console.error("Failed to fetch meta data:", error);
-//     }
-//   };
-
-//   const fetchBusinessPhoto = async () => {
-//     try {
-//       setLoading(true);
-//       const resp = await fetchData(`/webGetBusinessImage/${id}`);
-//       setCustomerPhoto(resp?.data?.[0]?.business_image);
-//     } catch (err) {
-//       console.error("Failed to fetch customer photo:", err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchMetaData();
-//     fetchBusinessPhoto();
-//     breFetch();
-//   }, [id, person?.msmeIdentifier]);
-
-//   const formatDateForSubmit = (dateString) => {
-//     if (!dateString) return "";
-//     const [yyyy, mm, dd] = dateString.split("-");
-//     return `${yyyy}-${mm}-${dd}`;
-//   };
-
-//   const handleSubmit = async () => {
-//     setLoading(true);
-//     const payload = {
-//       id,
-//       sector,
-//       subsector,
-//       udyamEntityType,
-//       businessName,
-//       business_incorp_date: formatDateForSubmit(businessIncorp),
-//       udyam_incorp_date: formatDateForSubmit(udyamIncorp),
-//     };
-
-//     const result = await updateBusinessDetails(payload);
-//     setLoading(false);
-    
-//     if (result.success) {
-//       setIsBusinessModalVisible(false);
-//       router.refresh(); // Tells Next.js to cleanly re-fetch server layout data streams smoothly
-//     } else {
-//       console.error("Submission failed:", result.error);
-//     }
-//   };
-
-//   const handleBusinessNameChange = (e) => {
-//     const value = e.target.value;
-//     if (/^[a-zA-Z0-9\s,_-]*$/.test(value)) {
-//       setBusinessName(value);
-//     }
-//   };
-
-//   const handlePdfDownload = async () => {
-//     setLoading(true);
-//     const token = localStorage.getItem("authToken");
-//     const apiKey = getApiHeaderKey();
-
-//     // const response = await fetchExcelBinary(person?.msme_identifier, token, apiKey);
-//     // setLoading(false);
-
-//     if (response.success && response.base64) {
-//       const link = document.createElement("a");
-//       link.href = `data:application/pdf;base64,${response.base64}`;
-//       link.download = `Statement_Report_${person?.msme_identifier}.pdf`;
-//       document.body.appendChild(link);
-//       link.click();
-//       document.body.removeChild(link);
-//     } else {
-//       console.error("PDF Download process failed:", response.error);
-//     }
-//   };
-
-//   const filteredSubsectors = data.filter((item) => item.SET === "SUBSECTOR");
-//   const sectors = data.filter((item) => item.SET === "SECTOR");
+export default function BusinessDetails({ person, businessImage, businessImageWarning }) {
+  const isNtbvl = person?.case_type === "NTBVL";
+  const image =
+    businessImage ||
+    normalizeImage(person?.business_image) ||
+    normalizeImage(person?.business_image_1) ||
+    normalizeImage(person?.business_image_2) ||
+    normalizeImage(person?.business_image_3) ||
+    normalizeImage(person?.business_image_4);
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-sm">
+    <section className="space-y-4">
+      <div className="border-b border-slate-200 pb-3">
+        <h3 className="text-base font-semibold text-slate-900">
+          {isNtbvl ? "Additional Details" : "Business Profile Information"}
+        </h3>
+        <p className="text-xs text-slate-500">
+          Sector, Udyam and business mapping details
+        </p>
+      </div>
 
-        <h1> view page</h1>
-      {/* <Cusdetail heading="Business Profile Information" para="Verify and alter organizational parameters" /> */}
-      
-      {/* <div className="my-4">
-        <Button type="primary" icon={<DownloadOutlined />} loading={loading} onClick={handlePdfDownload}>
-          Download Statement PDF
-        </Button>
-        <Button className="ml-2" onClick={() => setIsBusinessModalVisible(true)}>
-          Edit Parameters
-        </Button>
-      </div> */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+        <div className="grid gap-3 md:grid-cols-2">
+          {isNtbvl && (
+            <>
+              <ViewField label="Prefix" value={person?.prefix} />
+              <ViewField label="Gender" value={person?.gender} />
+              <ViewField label="Father Name" value={person?.father_name} />
+              <ViewField label="Mother Name" value={person?.mother_name} />
+              <ViewField label="Marital Status" value={person?.marital_status} />
+              <ViewField label="Occupation" value={person?.occupation} />
+              <ViewField label="Education" value={person?.qualification} />
+              <ViewField label="Annual Income" value={person?.annual_income} />
+              <ViewField label="Purpose Of Loan" value={person?.purpose_of_loan} />
+              <ViewField label="Employment Status" value={person?.employment_status} />
+            </>
+          )}
+          <ViewField label="Udyam Number" value={person?.udyam_no} />
+          <ViewField
+            label="Business Name"
+            value={person?.business_name_byuser || person?.udyam_name}
+          />
+          <ViewField label="Udyam Incorporation Date" value={person?.udyam_incorp_date} />
+          <ViewField label=" Date Of Registraion" value={person?.business_incorp_date} />
+          <ViewField label=" Entity Type" value={person?.udyam_entity_type} />
+          <ViewField label="Business Mobile Number" value={person?.udyam_major_activity} />
+          <ViewField label="Business Email" value={person?.udyam_nature_of_business} />
+          <ViewField
+            label="Business Address"
+            value={`${person?.business_address || ""}, ${person?.business_city || ""}, ${person?.business_state || ""}, ${person?.business_pincode || ""}`}
+            wide
+          />          
+          <ViewField label="Business State" value={person?.business_pan} />
+          <ViewField label="Business Pincode" value={person?.business_pan} />
+          <ViewField label="Distance to the Nearest branch (KM)" value={person?.business_pan} />
+          <ViewField label="Nerest Branch Name" value={person?.business_pan} />
+           <ViewField label="Sector" value={person?.sector} />
+           <ViewField label="Subsector" value={person?.subsector} />
+          <ViewField label="Business Name(By User)" value={person?.business_pan} />
+          <ViewField label="Udyam Entity" value={person?.business_gst} />
 
-      {/* {businessImages.length > 0 && (
-        <div className="w-64 my-4">
-          <Carousel autoplay>
-            {businessImages.map((img) => (
-              <div key={img.index} className="relative group">
-                <Image src={`data:image/jpeg;base64,${img.src}`} alt="Business Location Data" fallback="/fallback.png" />
-                <Button 
-                  size="small" 
-                  className="absolute bottom-2 right-2 hidden group-hover:block"
-                  onClick={() => downloadImage(img.src, img.index)}
-                >
-                  Download
-                </Button>
+          <ViewField label="Case Type" value={person?.case_type} />
+          <ViewField label="Google Business Name" value={person?.business_vintage} />
+          <ViewField label="Google Business Address" value={person?.gst_no} />
+          <ViewField label="Google Phone Number" value={person?.business_pan} />
+          <ViewField label="Google Business Status" value={person?.shop_ownership} />
+          <ViewField label="Google Overall Rating" value={person?.business_type} />
+          <ViewField label="Number Of Application Using Same Mobile No" value={person?.monthly_turnover} />
+          <ViewField label="Number Of Application In 100 M LAT Long" value={person?.business_lat} />          
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-white">
+          <div className="border-b border-slate-200 px-3 py-2 text-center text-sm font-semibold">
+            Business Image
+          </div>
+          <div className="space-y-3 p-3 text-center">
+            {businessImageWarning && !image && (
+              <Alert
+                type="warning"
+                title="Business image unavailable"
+                description={businessImageWarning}
+                showIcon
+              />
+            )}
+
+            {image ? (
+              <Image src={image} alt="Business" className="max-h-72 object-contain" />
+            ) : (
+              <div className="flex h-48 items-center justify-center rounded-md bg-slate-50 text-sm text-slate-500">
+                No image available
               </div>
-            ))}
-          </Carousel>
-        </div>
-      )} */}
+            )}
 
-      {/* <Modal
-        title="Edit Business Properties Mapping"
-        open={isBusinessModalVisible}
-        onOk={handleSubmit}
-        confirmLoading={loading}
-        onCancel={() => setIsBusinessModalVisible(false)}
-      >
-        <div className="space-y-4 pt-2">
-          <div>
-            <label className="block text-xs font-semibold mb-1">Business Name</label>
-            <Input value={businessName} onChange={handleBusinessNameChange} />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold mb-1">Sector Class Alignment</label>
-            <Select className="w-full" value={sector} onChange={(val) => setSector(val)}>
-              {sectors.map((s) => <Option key={s.VALUE} value={s.VALUE}>{s.LABEL || s.VALUE}</Option>)}
-            </Select>
+            <div className="flex justify-between gap-3 text-xs font-medium text-slate-700">
+              <span>Lat: {person?.business_lat || "N/A"}</span>
+              <span>Long: {person?.business_long || "N/A"}</span>
+            </div>
+
+            <Button
+              block
+              icon={<DownloadOutlined />}
+              disabled={!image}
+              onClick={() =>
+                downloadDataUrl(
+                  image,
+                  `${person?.business_name_byuser || person?.full_name || "business"}_image.jpg`,
+                )
+              }
+            >
+              Download
+            </Button>
           </div>
         </div>
-      </Modal> */}
-
-      {/* <CPVDetails id={id} breData={breData} dist={dist} dist1={dist1} /> */}
-    </div>
+      </div>
+    </section>
   );
 }

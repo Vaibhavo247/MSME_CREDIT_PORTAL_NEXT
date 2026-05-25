@@ -4,8 +4,19 @@ import ApprovedClientPage from "./approvedclient";
 import { extractDataFromResponse } from "@/lib/crypto";
 
 export default async function ApprovedPage() {
-  const resp = await getCreditApprovedLoanRecords();
-  const initialData = extractDataFromResponse(resp);
+  let initialData = [];
+
+  try {
+    const resp = await getCreditApprovedLoanRecords();
+    initialData = extractDataFromResponse(resp);
+  } catch (error) {
+    return (
+      <div className="p-4">
+        <h3 className="text-lg font-semibold text-red-600">Unable to load approved cases</h3>
+        <p className="text-sm text-gray-700">{String(error?.message || error)}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
