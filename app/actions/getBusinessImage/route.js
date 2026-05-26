@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { webGetBusinessImage, webGetBusinessImageWithAgentToken } from "@/lib/api";
 import { extractDataFromResponse } from "@/lib/crypto";
+import { badRequest, isForbidden } from "@/lib/errors/apiError";
+import { errorResponse } from "@/lib/errors/response";
 
 function extractImageData(response) {
   return response?.encryptedResponse
@@ -8,15 +10,11 @@ function extractImageData(response) {
     : response?.data ?? [];
 }
 
-function isForbidden(error) {
-  return String(error?.message || error).includes("FORBIDDEN");
-}
-
 export async function GET(request) {
   const id = request.nextUrl.searchParams.get("id");
 
   if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    return errorResponse(badRequest("Missing id"));
   }
 
   try {
@@ -24,11 +22,7 @@ export async function GET(request) {
     return NextResponse.json({ data: extractImageData(response) });
   } catch (error) {
     if (!isForbidden(error)) {
-      console.error("Failed to fetch business image", error);
-      return NextResponse.json(
-        { error: error?.message || "Failed to fetch business image" },
-        { status: 500 },
-      );
+      return errorResponse(error, "Failed to fetch business image");
     }
   }
 
@@ -37,11 +31,7 @@ export async function GET(request) {
     return NextResponse.json({ data: extractImageData(response) });
   } catch (error) {
     if (!isForbidden(error)) {
-      console.error("Failed to fetch business image with agent token", error);
-      return NextResponse.json(
-        { error: error?.message || "Failed to fetch business image" },
-        { status: 500 },
-      );
+      return errorResponse(error, "Failed to fetch business image");
     }
 
     return NextResponse.json({

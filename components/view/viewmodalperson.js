@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Modal, Spin, Tabs } from "antd";
+import { Alert, Button, Checkbox, Input, Modal, Spin, Tabs } from "antd";
+import { useRouter } from "next/navigation";
+import { useUser } from "@/components/UserContext";
+import { fetchJson, postJson } from "@/lib/clientFetch";
 import CustomerDetails from "./customerdetails";
 import BusinessDetails from "./businessdetails";
 import OtherDetails from "./otherdetails";
@@ -29,24 +32,16 @@ function normalizeBusinessImage(imageResponse) {
   return normalizeImage(image);
 }
 
-async function getJson(url) {
-  const response = await fetch(url);
-  const json = await response.json();
-
-  if (!response.ok) {
-    throw new Error(json?.error || "Request failed");
-  }
-
-  return json;
-}
-
-export default function ViewModalPerson({ id, open = true }) {
+export default function ViewModalPerson({ id, open = true, onActionComplete }) {
+  const router = useRouter();
+  const user = useUser();
   const [person, setPerson] = useState(null);
   const [docs, setDocs] = useState(null);
   const [docsWarning, setDocsWarning] = useState("");
   const [businessImageData, setBusinessImageData] = useState(null);
   const [businessImageWarning, setBusinessImageWarning] = useState("");
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -61,13 +56,13 @@ export default function ViewModalPerson({ id, open = true }) {
       setBusinessImageWarning("");
 
       try {
-        const summaryResponse = await getJson(`/actions/getSummary?id=${encodeURIComponent(id)}`);
+        const summaryResponse = await fetchJson(`/actions/getSummary?id=${encodeURIComponent(id)}`);
         const [docsResponse, businessImageResponse] = await Promise.all([
-          getJson(`/actions/getCaseDocs?id=${encodeURIComponent(id)}`).catch((docsError) => ({
+          fetchJson(`/actions/getCaseDocs?id=${encodeURIComponent(id)}`).catch((docsError) => ({
             data: [],
             warning: docsError?.message || "Case documents are not available.",
           })),
-          getJson(`/actions/getBusinessImage?id=${encodeURIComponent(id)}`).catch((imageError) => ({
+          fetchJson(`/actions/getBusinessImage?id=${encodeURIComponent(id)}`).catch((imageError) => ({
             data: [],
             warning: imageError?.message || "Business image is not available.",
           })),
@@ -103,6 +98,174 @@ export default function ViewModalPerson({ id, open = true }) {
     () => normalizeBusinessImage(businessImageData),
     [businessImageData],
   );
+  const canAct =
+    user?.role === "CREDIT" &&
+    person?.credit_status !== "Approved" &&
+    person?.loan_status !== "Rejected";
+
+  function finishAction(title, content) {
+    Modal.success({
+      title,
+      content,
+      onOk: () => {
+        onActionComplete?.();
+        router.refresh();
+      },
+    });
+  }
+
+  async function handleApprove() {
+    const allowedUdhyamStatus = [0, 1, 2].includes(Number(person?.isUdhyamDeviated));
+
+    if (!allowedUdhyamStatus) {
+      Modal.error({
+        title: "Error",
+        content: "Invalid Udhyam Deviated status.",
+      });
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await postJson("/actions/approveCase", {
+        id,
+        approved_by: user?.employeeId,
+      });
+      finishAction("Success", "Case has been approved successfully.");
+    } catch (actionError) {
+      Modal.error({
+        title: "Error",
+        content: actionError?.message || "Failed to approve the case. Please try again.",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  function showApproveConfirm() {
+    Modal.confirm({
+      title: "Warning",
+      content: "Are you sure you want to approve?",
+      okText: "Confirm",
+      cancelText: "Cancel",
+      onOk: handleApprove,
+    });
+  }
+
+  function showPendingConfirm() {
+    const reasons = [
+      "Re-upload Business Image",
+      "Re-upload Business Multiple Images",
+      "Update Udyam document and Business details",
+      "Update Current Address",
+    ];
+    let selectedReasons = [];
+    let comment = "";
+
+    Modal.confirm({
+      title: "Select Pending Reason",
+      width: 600,
+      content: (
+        <div className="space-y-3">
+          <Checkbox.Group
+            className="flex flex-col gap-2"
+            options={reasons}
+            onChange={(values) => {
+              selectedReasons = values;
+            }}
+          />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Additional Comments
+            </label>
+            <Input.TextArea
+              rows={4}
+              placeholder="Enter additional comments"
+              onChange={(event) => {
+                comment = event.target.value;
+              }}
+            />
+          </div>
+        </div>
+      ),
+      okText: "Confirm",
+      onOk: async () => {
+        if (selectedReasons.length === 0) {
+          Modal.error({
+            title: "Error",
+            content: "Please select at least one reason.",
+          });
+          return Promise.reject();
+        }
+
+        setActionLoading(true);
+        try {
+          await postJson("/actions/pendingCase", {
+            id,
+            credit_selective_comment: selectedReasons.join(", "),
+            credit_comment: comment.trim(),
+            approved_by: user?.employeeId,
+          });
+          finishAction("Success", "Case has been marked as pending successfully.");
+        } catch (actionError) {
+          Modal.error({
+            title: "Error",
+            content: actionError?.message || "Failed to mark the case pending. Please try again.",
+          });
+          return Promise.reject();
+        } finally {
+          setActionLoading(false);
+        }
+      },
+    });
+  }
+
+  function showCancelConfirm() {
+    let reason = "";
+
+    Modal.confirm({
+      title: "Are you sure to cancel?",
+      content: (
+        <Input.TextArea
+          rows={4}
+          placeholder="Please enter a reason"
+          onChange={(event) => {
+            reason = event.target.value;
+          }}
+        />
+      ),
+      okText: "Confirm",
+      cancelText: "Back",
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        if (!reason.trim()) {
+          Modal.error({
+            title: "Error",
+            content: "Reason is required.",
+          });
+          return Promise.reject();
+        }
+
+        setActionLoading(true);
+        try {
+          await postJson("/actions/cancelCase", {
+            id,
+            credit_comment: reason.trim(),
+            approved_by: user?.employeeId,
+          });
+          finishAction("Success", "Case has been cancelled successfully.");
+        } catch (actionError) {
+          Modal.error({
+            title: "Error",
+            content: actionError?.message || "Failed to cancel the case. Please try again.",
+          });
+          return Promise.reject();
+        } finally {
+          setActionLoading(false);
+        }
+      },
+    });
+  }
 
   if (!id) {
     return <Alert type="warning" title="No application selected" showIcon />;
@@ -162,6 +325,25 @@ export default function ViewModalPerson({ id, open = true }) {
           }
         ]}
       />
+
+      {canAct && (
+        <div className="sticky bottom-0 mt-5 flex justify-center gap-3 border-t border-slate-200 bg-white/95 px-4 py-4 backdrop-blur">
+          <Button
+            type="primary"
+            className="bg-green-600"
+            loading={actionLoading}
+            onClick={showApproveConfirm}
+          >
+            Approve
+          </Button>
+          <Button loading={actionLoading} onClick={showPendingConfirm}>
+            Pending
+          </Button>
+          <Button danger loading={actionLoading} onClick={showCancelConfirm}>
+            Cancel
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -176,7 +358,7 @@ export function ViewPersonModal({ id, open, onClose }) {
       footer={null}
       destroyOnHidden
     >
-      <ViewModalPerson id={id} open={open} />
+      <ViewModalPerson id={id} open={open} onActionComplete={onClose} />
     </Modal>
   );
 }

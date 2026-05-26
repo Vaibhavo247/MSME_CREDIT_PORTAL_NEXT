@@ -45,16 +45,16 @@ export default async function ProtectedLayout({ children }) {
       const data = extractDataFromResponse(response);
       const employee = data?.[0];
 
-      if (!employee?.EmployeeId) {
-        redirect('http://localhost:3001/')
-      }
+       if (!employee?.EmployeeId) {
+         redirect('http://localhost:3000/')
+       }
 
       employeeData = {
         employeeId: employee.EmployeeId ?? employee.employeeId ?? 'Unknown',
         role: employee.Role ?? employee.role ?? 'EMPLOYEE',
       };
     } catch {
-      redirect('http://localhost:3001/')
+      redirect('http://localhost:3000/')
     }
   }
 

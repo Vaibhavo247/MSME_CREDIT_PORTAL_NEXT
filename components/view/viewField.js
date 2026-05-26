@@ -1,4 +1,4 @@
-export default function ViewField({ label, value, wide = false }) {
+export default function ViewField({ label, value, children,wide = false }) {
   const displayValue =
     value === null || value === undefined || value === "" ? "N/A" : value;
 
@@ -9,7 +9,7 @@ export default function ViewField({ label, value, wide = false }) {
           {label}
         </p>
         <p className="mt-1 break-words text-sm font-medium text-slate-900">
-          {displayValue}
+          {children || displayValue}
         </p>
       </div>
     </div>

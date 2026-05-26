@@ -16,13 +16,15 @@ function clearCookies(response) {
 }
 
 export async function POST() {
-  const response = NextResponse.redirect('');
+  const response = NextResponse.redirect('/');
   clearCookies(response);
   return response;
 }
 
-export async function GET() {
-  const response = NextResponse.redirect('/');
+export async function GET(request) {
+  const reason = request.nextUrl.searchParams.get('reason');
+  const redirectPath = reason === 'session_expired' ? '/?session=expired' : '/';
+  const response = NextResponse.redirect(new URL(redirectPath, request.url));
   clearCookies(response);
   return response;
 }

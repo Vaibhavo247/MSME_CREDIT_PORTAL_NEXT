@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCaseDocs, getCaseDocsWithAgentToken } from "@/lib/api";
 import { extractDataFromResponse } from "@/lib/crypto";
+import { badRequest, isForbidden } from "@/lib/errors/apiError";
+import { errorResponse } from "@/lib/errors/response";
 
 function extractDocs(response) {
   return response?.encryptedResponse
@@ -8,15 +10,11 @@ function extractDocs(response) {
     : response?.data ?? [];
 }
 
-function isForbidden(error) {
-  return String(error?.message || error).includes("FORBIDDEN");
-}
-
 export async function GET(request) {
   const id = request.nextUrl.searchParams.get("id");
 
   if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    return errorResponse(badRequest("Missing id"));
   }
 
   try {
@@ -24,11 +22,7 @@ export async function GET(request) {
     return NextResponse.json({ data: extractDocs(response) });
   } catch (error) {
     if (!isForbidden(error)) {
-      console.error("Failed to fetch case docs", error);
-      return NextResponse.json(
-        { error: error?.message || "Failed to fetch case docs" },
-        { status: 500 },
-      );
+      return errorResponse(error, "Failed to fetch case docs");
     }
   }
 
@@ -37,11 +31,7 @@ export async function GET(request) {
     return NextResponse.json({ data: extractDocs(response) });
   } catch (error) {
     if (!isForbidden(error)) {
-      console.error("Failed to fetch case docs with agent token", error);
-      return NextResponse.json(
-        { error: error?.message || "Failed to fetch case docs" },
-        { status: 500 },
-      );
+      return errorResponse(error, "Failed to fetch case docs");
     }
 
     return NextResponse.json({

@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 
-export default function Home() {
+export default async function Home({ searchParams }) {
   const LOGIN_URL = "https://msme.suryodaybank.co.in/api/ibm/login";
+  const params = await searchParams;
+  const isSessionExpired = params?.session === "expired";
 
   return (
     // Modern Banking Background
@@ -30,6 +32,12 @@ export default function Home() {
               <p className="text-sm text-purple-300 font-semibold tracking-wider">CREDIT PORTAL</p>
               <p className="text-slate-400 text-sm mt-2">Empowering MSME Growth</p>
             </div>
+
+            {isSessionExpired && (
+              <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-100">
+                Your secure session has expired. Please log in again.
+              </div>
+            )}
 
             {/* Logo Section */}
             <div className="relative w-full h-24 flex items-center justify-center bg-gradient-to-br from-slate-700/50 to-slate-800/50 rounded-xl border border-slate-600/50 p-4">

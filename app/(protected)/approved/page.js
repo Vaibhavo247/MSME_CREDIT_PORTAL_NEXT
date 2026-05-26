@@ -2,6 +2,8 @@
 import { getCreditApprovedLoanRecords } from "@/lib/api";
 import ApprovedClientPage from "./approvedclient";
 import { extractDataFromResponse } from "@/lib/crypto";
+import ErrorState from "@/components/ErrorState";
+import { getDisplayError } from "@/lib/errors/apiError";
 
 export default async function ApprovedPage() {
   let initialData = [];
@@ -10,12 +12,7 @@ export default async function ApprovedPage() {
     const resp = await getCreditApprovedLoanRecords();
     initialData = extractDataFromResponse(resp);
   } catch (error) {
-    return (
-      <div className="p-4">
-        <h3 className="text-lg font-semibold text-red-600">Unable to load approved cases</h3>
-        <p className="text-sm text-gray-700">{String(error?.message || error)}</p>
-      </div>
-    );
+    return <ErrorState title="Unable to load approved cases" message={getDisplayError(error)} />;
   }
 
   return (
